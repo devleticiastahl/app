@@ -144,7 +144,6 @@ if numerical_cols:
         st.pyplot(fig)
 
 # Análise categórica
-# Análise categórica
 categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
 if categorical_cols:
     st.subheader("Análise Categórica")
@@ -153,9 +152,12 @@ if categorical_cols:
     top_n = st.slider("Mostrar top N valores", 5, 20, 10)
     counts = df[cat_col].value_counts().nlargest(top_n)
     
-    # Paleta customizada com destaque para top 3
+    # Nova paleta com degradê suave
     palette = [
-        '#1f77b4' if i < 3 else '#aec7e8'  # Azul mais forte para top 3, suave para o restante
+        '#2A5C8A' if i == 0 else  # Azul escuro (1º lugar)
+        '#3A7BAD' if i == 1 else    # Azul médio (2º lugar)
+        '#4D9ACF' if i == 2 else    # Azul claro (3º lugar)
+        '#D3E5F4'                  # Azul muito claro (demais)
         for i in range(len(counts))
     ]
     
@@ -165,13 +167,17 @@ if categorical_cols:
         y=counts.index, 
         ax=ax, 
         palette=palette,
-        linewidth=0  # Remove completamente as bordas
+        linewidth=0,
+        saturation=0.9  # Intensidade das cores
     )
     
-    plt.title(f'Top {top_n} Valores em {cat_col}', fontsize=14, pad=20)
+    # Ajustes estéticos
+    plt.title(f'Distribuição de {cat_col}', fontsize=14, pad=20)
     plt.xlabel('Contagem', fontsize=12)
     plt.ylabel('')
-    sns.despine()
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    sns.despine(left=True)
     st.pyplot(fig)
 
 
