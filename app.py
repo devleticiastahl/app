@@ -58,7 +58,7 @@ except Exception as e:
     st.stop()
 
 # ============ ANÁLISE EXPLORATÓRIA ============
-st.header("🔍 Análise Exploratória")
+st.header("Análise Exploratória")
 
 # Métricas básicas
 col1, col2 = st.columns(2)
@@ -72,7 +72,7 @@ st.subheader("Primeiras Linhas")
 st.dataframe(df.head(), height=250)
 
 # Estatísticas descritivas
-with st.expander("📈 Estatísticas Descritivas"):
+with st.expander("Estatísticas Descritivas"):
     st.subheader("Tipos de Dados")
     st.write(df.dtypes.astype(str))
     
@@ -127,7 +127,7 @@ if datetime_cols:
 # Análise numérica
 numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
 if numerical_cols:
-    st.subheader("📉 Distribuição Numérica")
+    st.subheader("Distribuição Numérica")
     num_col = st.selectbox("Selecione coluna numérica", numerical_cols)
     
     col1, col2 = st.columns(2)
@@ -146,20 +146,37 @@ if numerical_cols:
 # Análise categórica
 categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
 if categorical_cols:
-    st.subheader("📊 Análise Categórica")
+    st.subheader("Análise Categórica")
     cat_col = st.selectbox("Selecione coluna categórica", categorical_cols)
     
     top_n = st.slider("Mostrar top N valores", 5, 20, 10)
     counts = df[cat_col].value_counts().nlargest(top_n)
     
+    # Paleta customizada com destaque para top 3
+    palette = [
+        '#1f77b4' if i < 3 else '#aec7e8'  # Azul mais forte para top 3, suave para o restante
+        for i in range(len(counts))
+    ]
+    
     fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(x=counts.values, y=counts.index, ax=ax, palette='viridis')
-    plt.title(f'Top {top_n} Valores em {cat_col}')
+    sns.barplot(
+        x=counts.values, 
+        y=counts.index, 
+        ax=ax, 
+        palette=palette,
+        edgecolor='black'
+    )
+    
+    plt.title(f'Top {top_n} Valores em {cat_col}', fontsize=14, pad=20)
+    plt.xlabel('Contagem', fontsize=12)
+    plt.ylabel('')
+    sns.despine()
     st.pyplot(fig)
+
 
 # Mapa de calor de correlação
 if len(numerical_cols) > 1:
-    st.subheader("🔥 Mapa de Correlação")
+    st.subheader("Mapa de Correlação")
     fig, ax = plt.subplots(figsize=(12, 8))
     mask = np.triu(np.ones_like(df[numerical_cols].corr(), dtype=bool))
     sns.heatmap(df[numerical_cols].corr(), annot=True, fmt=".2f", 
