@@ -152,40 +152,46 @@ if categorical_cols:
     top_n = st.slider("Mostrar top N valores", 5, 20, 10)
     counts = df[cat_col].value_counts().nlargest(top_n)
     
-    # Nova paleta com degradê suave
     palette = [
-        '#2A5C8A' if i == 0 else  # Azul escuro (1º lugar)
-        '#3A7BAD' if i == 1 else    # Azul médio (2º lugar)
-        '#4D9ACF' if i == 2 else    # Azul claro (3º lugar)
-        '#D3E5F4'                  # Azul muito claro (demais)
+        '#2A5C8A' if i == 0 else  
+        '#3A7BAD' if i == 1 else    
+        '#4D9ACF' if i == 2 else    
+        '#D3E5F4'                  
         for i in range(len(counts))
     ]
     
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(8, 4))  # TAMANHO AJUSTADO
     sns.barplot(
         x=counts.values, 
         y=counts.index, 
         ax=ax, 
         palette=palette,
         linewidth=0,
-        saturation=0.9  # Intensidade das cores
+        saturation=0.9
     )
     
-    # Ajustes estéticos
-    plt.title(f'Distribuição de {cat_col}', fontsize=14, pad=20)
-    plt.xlabel('Contagem', fontsize=12)
+    plt.title(f'Distribuição de {cat_col}', fontsize=12, pad=15)  # FONTE MENOR
+    plt.xlabel('Contagem', fontsize=10)
     plt.ylabel('')
-    plt.xticks(fontsize=10)
-    plt.yticks(fontsize=10)
+    plt.xticks(fontsize=8)
+    plt.yticks(fontsize=8)
     sns.despine(left=True)
     st.pyplot(fig)
-
 
 # Mapa de calor de correlação
 if len(numerical_cols) > 1:
     st.subheader("Mapa de Correlação")
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(10, 6))  # TAMANHO AJUSTADO
     mask = np.triu(np.ones_like(df[numerical_cols].corr(), dtype=bool))
-    sns.heatmap(df[numerical_cols].corr(), annot=True, fmt=".2f", 
-                cmap='coolwarm', mask=mask, ax=ax)
+    sns.heatmap(
+        df[numerical_cols].corr(), 
+        annot=True, 
+        fmt=".2f", 
+        cmap='coolwarm', 
+        mask=mask, 
+        ax=ax,
+        annot_kws={'size': 8}  # FONTE DAS ANOTAÇÕES MENOR
+    )
+    plt.xticks(fontsize=8)
+    plt.yticks(fontsize=8)
     st.pyplot(fig)
