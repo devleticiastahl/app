@@ -144,6 +144,7 @@ if numerical_cols:
         st.pyplot(fig)
 
 # Análise categórica
+# Análise categórica
 categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
 if categorical_cols:
     st.subheader("Análise Categórica")
@@ -164,7 +165,7 @@ if categorical_cols:
         y=counts.index, 
         ax=ax, 
         palette=palette,
-        edgecolor='black'
+        linewidth=0  # Remove completamente as bordas
     )
     
     plt.title(f'Top {top_n} Valores em {cat_col}', fontsize=14, pad=20)
