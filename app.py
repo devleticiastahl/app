@@ -169,4 +169,111 @@ if st.button("🎯 Treinar Modelo"):
 
 # ============ ANÁLISE EXPLORATÓRIA (original) ============
 st.header("🔍 Análise Exploratória")
-# ... (mantenha aqui as funções originais de análise exploratória que você já tinha)
+
+# Métricas básicas
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("Total de Registros", len(df))
+with col2:
+    st.metric("Total de Colunas", len(df.columns))
+
+# Primeiras linhas do dataframe
+st.subheader("Primeiras Linhas")
+st.dataframe(df.head(), height=250)
+
+# Estatísticas descritivas
+with st.expander("📈 Estatísticas Descritivas"):
+    st.subheader("Tipos de Dados")
+    st.write(df.dtypes.astype(str))
+    
+    st.subheader("Valores Faltantes")
+    missing = df.isnull().sum()
+    if missing.sum() > 0:
+        st.bar_chart(missing[missing > 0])
+    else:
+        st.success("✅ Nenhum valor faltante encontrado!")
+    
+    st.subheader("Estatísticas Numéricas")
+    st.write(df.describe())
+
+# Análise temporal
+datetime_cols = [col for col in df.columns if is_datetime_column(df[col])]
+if datetime_cols:
+    date_col = st.selectbox("Selecione coluna temporal", datetime_cols, key="temp_analysis")
+    
+    try:
+        df[date_col] = pd.to_datetime(df[date_col])
+        df['__temp_date__'] = df[date_col].dt.floor('D')
+        
+        st.subheader(f"Análise Temporal: {date_col}")
+        tab1, tab2 = st.tabs(["Série Temporal", "Distribuição Temporal"])
+        
+        with tab1:
+            freq = st.radio("Frequência", ["Diária", "Mensal"], 
+                          horizontal=True, key="temp_freq")
+            if freq == "Diária":
+                temp_df = df['__temp_date__'].value_counts().sort_index()
+            else:
+                temp_df = df.groupby(df[date_col].dt.to_period('M')).size()
+                temp_df.index = temp_df.index.to_timestamp()
+            
+            st.line_chart(temp_df)
+        
+        with tab2:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Distribuição por Hora")
+                df['__hour__'] = df[date_col].dt.hour
+                st.bar_chart(df['__hour__'].value_counts())
+            
+            with col2:
+                st.subheader("Distribuição por Dia da Semana")
+                df['__weekday__'] = df[date_col].dt.weekday
+                st.bar_chart(df['__weekday__'].value_counts())
+        
+        # Limpeza de colunas temporárias
+        del df['__temp_date__'], df['__hour__'], df['__weekday__']
+    except Exception as e:
+        st.error(f"⚠️ Erro na análise temporal: {str(e)}")
+
+# Análise numérica
+numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
+if numerical_cols:
+    st.subheader("📉 Distribuição Numérica")
+    num_col = st.selectbox("Selecione coluna numérica", numerical_cols, key="num_dist")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        fig, ax = plt.subplots()
+        sns.histplot(df[num_col], kde=True, ax=ax, color='skyblue')
+        plt.title(f'Histograma de {num_col}')
+        st.pyplot(fig)
+    
+    with col2:
+        fig, ax = plt.subplots()
+        sns.boxplot(x=df[num_col], ax=ax, color='lightgreen')
+        plt.title(f'Boxplot de {num_col}')
+        st.pyplot(fig)
+
+# Análise categórica
+categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
+if categorical_cols:
+    st.subheader("📊 Análise Categórica")
+    cat_col = st.selectbox("Selecione coluna categórica", categorical_cols, key="cat_analysis")
+    
+    top_n = st.slider("Mostrar top N valores", 5, 20, 10, key="top_n")
+    counts = df[cat_col].value_counts().nlargest(top_n)
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(x=counts.values, y=counts.index, ax=ax, palette='viridis')
+    plt.title(f'Top {top_n} Valores em {cat_col}')
+    st.pyplot(fig)
+
+# Mapa de calor de correlação
+if len(numerical_cols) > 1:
+    st.subheader("🔥 Mapa de Correlação")
+    fig, ax = plt.subplots(figsize=(12, 8))
+    mask = np.triu(np.ones_like(df[numerical_cols].corr(), dtype=bool))
+    sns.heatmap(df[numerical_cols].corr(), annot=True, fmt=".2f", 
+                cmap='coolwarm', mask=mask, ax=ax)
+    st.pyplot(fig)
