@@ -38,16 +38,79 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Carregue seu arquivo CSV", type="csv")
 
 # ============ CARREGAMENTO DE DADOS ============
+# ============ CARREGAMENTO DE DADOS ============
 if not uploaded_file:
     st.markdown("""
-    ## Bem-vindo ao Analytics Pro!
-    Um sistema completo para análise exploratória de dados.
+    <style>
+        .welcome-header { 
+            font-size: 2.5em !important; 
+            color: #1f77b4;
+            margin-bottom: 0.5em;
+        }
+        .feature-card {
+            padding: 1.5em;
+            border-radius: 10px;
+            background: #f8f9fa;
+            margin: 1em 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .instruction-box {
+            background: #e3f2fd;
+            padding: 1em;
+            border-left: 4px solid #1f77b4;
+            margin: 1em 0;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-    1. **Carregue seu CSV** usando o menu lateral
-    2. **Explore as estatísticas descritivas**
-    3. **Analise as visualizações automáticas**
-    """)
-    st.image("https://i.imgur.com/7kMk3Zz.png", width=400)
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.markdown('<div class="welcome-header">📈 Analytics Pro</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="instruction-box">
+            <h3>Comece agora mesmo:</h3>
+            <ol>
+                <li>Use o menu lateral para carregar seu CSV</li>
+                <li>Explore as análises automáticas</li>
+                <li>Gere insights valiosos</li>
+            </ol>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.expander("📌 Formatos Suportados"):
+            st.markdown("""
+            - CSV com codificação UTF-8
+            - Até 200MB de tamanho
+            - Máximo de 1 milhão de linhas
+            - Colunas de data no formato `YYYY-MM-DD`
+            """)
+
+    with col2:
+        st.markdown("""
+        <div style="text-align: center; margin-top: 2em;">
+            <img src="https://i.imgur.com/iWm5wYk.png" width="400">
+            <p style="color: #666; margin-top: 1em;">Visualize seus dados de forma inteligente</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="feature-card">
+        <h3>🚀 Recursos Principais</h3>
+        <div style="columns: 2; margin-top: 1em;">
+            <div>
+                ✔️ Análise temporal automática<br>
+                ✔️ Detecção inteligente de padrões<br>
+                ✔️ Estatísticas descritivas detalhadas
+            </div>
+            <div>
+                ✔️ Visualizações interativas<br>
+                ✔️ Tratamento de valores faltantes<br>
+                ✔️ Exportação de relatórios
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.stop()
 
 try:
