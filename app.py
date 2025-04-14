@@ -29,6 +29,21 @@ st.set_page_config(
 def load_data(uploaded_file):
     return pd.read_csv(uploaded_file)
 
+def is_datetime_column(series):
+    """Verifica se uma coluna parece ser datetime."""
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return True
+    
+    col_name = series.name.lower()
+    date_keywords = ['date', 'time', 'hora', 'dia', 'ano', 'mes']
+    if any(keyword in col_name for keyword in date_keywords):
+        try:
+            pd.to_datetime(series)
+            return True
+        except:
+            return False
+    return False
+
 def preprocess_data(df, target_column):
     # Pré-processamento automático
     df_clean = df.dropna()
@@ -62,7 +77,7 @@ def plot_roc_curve(y_true, y_pred_prob):
     ax.legend(loc="lower right")
     return fig
 
-# ============ INTERFACE ============
+# ============ SIDEBAR ============
 with st.sidebar:
     st.title("🤖 ML Analytics Pro")
     uploaded_file = st.file_uploader("Carregue seu CSV", type="csv")
@@ -167,7 +182,7 @@ if st.button("🎯 Treinar Modelo"):
     except Exception as e:
         st.error(f"Erro no treinamento: {str(e)}")
 
-# ============ ANÁLISE EXPLORATÓRIA (original) ============
+# ============ ANÁLISE EXPLORATÓRIA ============
 st.header("🔍 Análise Exploratória")
 
 # Métricas básicas
