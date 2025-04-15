@@ -5,10 +5,17 @@ import seaborn as sns
 import numpy as np
 from datetime import datetime
 
-# ============ CONFIGURAÇÃO DE TEMA ============
+# ============ CONFIGURAÇÃO DA PÁGINA (OBRIGATÓRIO SER PRIMEIRO) ============
+st.set_page_config(
+    page_title="Analytics Pro",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ============ TEMA DARK PERSONALIZADO ============
 DARK_THEME = """
 <style>
-/* Cores principais */
 :root {
     --primary-bg: #141414;
     --secondary-bg: #191919;
@@ -17,7 +24,7 @@ DARK_THEME = """
     --text: #FFFFFF;
 }
 
-/* Estilos gerais */
+/* Base */
 html, body, [class*="css"] {
     color: var(--text);
     background-color: var(--primary-bg);
@@ -26,32 +33,28 @@ html, body, [class*="css"] {
 /* Sidebar */
 [data-testid="stSidebar"] {
     background-color: var(--secondary-bg) !important;
+    border-right: 1px solid var(--accent) !important;
 }
 
 /* Widgets */
-.stSelectbox, .stSlider, .stRadio {
-    background-color: var(--tertiary-bg);
-    border-radius: 8px;
-    padding: 10px;
-}
-
-/* Gráficos */
-svg {
-    background-color: var(--secondary-bg) !important;
+.stSelectbox, .stSlider, .stRadio, .stTextInput {
+    background-color: var(--tertiary-bg) !important;
+    border: 1px solid #404040 !important;
+    border-radius: 8px !important;
+    color: white !important;
 }
 
 /* Tabelas */
 [data-testid="stDataFrame"] {
     background-color: var(--tertiary-bg) !important;
-    color: var(--text) !important;
 }
 
-/* Headers */
+/* Cabeçalhos */
 h1, h2, h3, h4, h5, h6 {
     color: var(--accent) !important;
 }
 
-/* Botões e hover */
+/* Botões */
 .stButton>button {
     background-color: var(--tertiary-bg) !important;
     color: var(--accent) !important;
@@ -63,22 +66,30 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--primary-bg) !important;
 }
 
-/* Ajustes de Matplotlib */
-div.stPlotlyChart, div.stPyplot {
+/* Abas */
+[data-testid="stTab"] {
     background-color: var(--secondary-bg) !important;
+    border: 1px solid #404040 !important;
+}
+
+/* Gráficos */
+[data-testid="stPlotlyChart"], [data-testid="stPyplot"] {
+    background-color: var(--secondary-bg) !important;
+}
+
+/* Linhas divisórias */
+hr {
+    border-color: var(--accent) !important;
 }
 </style>
 """
-
 st.markdown(DARK_THEME, unsafe_allow_html=True)
 
-# ============ CONFIGURAÇÃO DA PÁGINA ============
-st.set_page_config(
-    page_title="Analytics Pro",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# ============ CONFIGURAÇÃO DE GRÁFICOS ============
+plt.style.use('dark_background')
+sns.set_theme(style="darkgrid")
+custom_palette = ["#FFD119", "#404040", "#262626", "#191919"]
+sns.set_palette(custom_palette)
 
 # ============ FUNÇÕES AUXILIARES ============
 @st.cache_data
@@ -99,31 +110,29 @@ def is_datetime_column(series):
             return False
     return False
 
-# Configuração de estilo para gráficos
-plt.style.use('dark_background')
-sns.set_theme(style="darkgrid", palette="viridis")
-custom_palette = ["#FFD119", "#404040", "#262626", "#191919", "#141414"]
-sns.set_palette(custom_palette)
-
 # ============ SIDEBAR ============
 with st.sidebar:
     st.title("📊 Analytics Pro")
-    st.markdown("<hr style='border:1px solid #FFD119'>", unsafe_allow_html=True)
+    st.markdown("<hr>", unsafe_allow_html=True)
     uploaded_file = st.file_uploader("Carregue seu arquivo CSV", type="csv")
 
 # ============ PÁGINA PRINCIPAL ============
 if not uploaded_file:
-    st.markdown("""
-    ## Bem-vindo ao Analytics Pro!
-    Um sistema completo para análise exploratória de dados.
-
-    1. **Carregue seu CSV** usando o menu lateral ➡️
-    2. **Explore as estatísticas descritivas** 📈
-    3. **Analise as visualizações automáticas** 📊
-    """)
-    st.image("https://i.imgur.com/7kMk3Zz.png", width=400)
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.image("https://i.imgur.com/7kMk3Zz.png", width=300)
+    with col2:
+        st.markdown("""
+        ## Bem-vindo ao Analytics Pro!
+        **Sistema completo para análise exploratória de dados**
+        
+        1. 📤 Carregue seu CSV no menu lateral  
+        2. 📊 Explore visualizações automáticas  
+        3. 🔍 Analise estatísticas descritivas  
+        """)
     st.stop()
 
+# Carregamento de dados
 try:
     df = load_data(uploaded_file)
     st.session_state['df'] = df
@@ -132,40 +141,88 @@ except Exception as e:
     st.error(f"❌ Erro ao ler arquivo: {str(e)}")
     st.stop()
 
-# ============ VISUALIZAÇÃO DE DADOS ============
-st.header("📋 Visão Geral dos Dados")
-
-col1, col2 = st.columns(2)
+# ============ VISÃO GERAL ============
+st.header("📋 Visão Geral")
+col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown(f"<div style='background-color:#191919; padding:20px; border-radius:10px;'>"
-                f"<h3 style='color:#FFD119;'>Total de Registros</h3>"
-                f"<h1 style='color:#FFD119; text-align:center;'>{len(df)}</h1></div>", 
-                unsafe_allow_html=True)
-
+    st.metric("Total de Registros", len(df))
 with col2:
-    st.markdown(f"<div style='background-color:#191919; padding:20px; border-radius:10px;'>"
-                f"<h3 style='color:#FFD119;'>Total de Colunas</h3>"
-                f"<h1 style='color:#FFD119; text-align:center;'>{len(df.columns)}</h1></div>", 
-                unsafe_allow_html=True)
+    st.metric("Total de Colunas", len(df.columns))
+with col3:
+    st.metric("Valores Faltantes", df.isnull().sum().sum())
 
-# ... (o restante do código mantém a mesma estrutura, mas com as cores aplicadas)
+st.dataframe(df.head(), height=250, use_container_width=True)
 
-# Exemplo de ajuste em um gráfico
-def plot_custom_chart(data, title):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax = sns.histplot(data, kde=True, color='#FFD119')
-    plt.title(title, color='#FFD119', fontsize=14)
-    ax.set_facecolor('#141414')
-    fig.patch.set_facecolor('#141414')
-    ax.tick_params(colors='white')
-    ax.xaxis.label.set_color('white')
-    ax.yaxis.label.set_color('white')
-    return fig
+# ============ ANÁLISE TEMPORAL ============
+datetime_cols = [col for col in df.columns if is_datetime_column(df[col])]
+if datetime_cols:
+    st.header("⏰ Análise Temporal")
+    date_col = st.selectbox("Selecione coluna temporal", datetime_cols)
+    
+    try:
+        df[date_col] = pd.to_datetime(df[date_col])
+        
+        tab1, tab2 = st.tabs(["📈 Série Temporal", "🗓️ Distribuição"])
+        with tab1:
+            freq = st.radio("Frequência", ["Diária", "Mensal"], horizontal=True)
+            if freq == "Diária":
+                temp_df = df[date_col].dt.floor('D').value_counts().sort_index()
+            else:
+                temp_df = df.groupby(df[date_col].dt.to_period('M')).size()
+                temp_df.index = temp_df.index.to_timestamp()
+            
+            st.line_chart(temp_df)
+        
+        with tab2:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Por Hora do Dia")
+                df['__hour__'] = df[date_col].dt.hour
+                st.bar_chart(df['__hour__'].value_counts())
+            
+            with col2:
+                st.subheader("Por Dia da Semana")
+                df['__weekday__'] = df[date_col].dt.weekday
+                st.bar_chart(df['__weekday__'].value_counts())
+    except Exception as e:
+        st.warning(f"⚠️ Não foi possível analisar a coluna temporal: {str(e)}")
 
-# ============ DEMONSTRAÇÃO DE USO ============
-# Substitua todos os gráficos existentes por versões usando a função plot_custom_chart
-# Exemplo na seção de distribuição numérica:
+# ============ ANÁLISE NUMÉRICA ============
+numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
 if numerical_cols:
-    st.subheader("📉 Distribuição Numérica")
+    st.header("🔢 Análise Numérica")
     num_col = st.selectbox("Selecione coluna numérica", numerical_cols)
-    st.pyplot(plot_custom_chart(df[num_col], f'Distribuição de {num_col}'))
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    
+    sns.histplot(df[num_col], kde=True, ax=ax1, color='#FFD119')
+    ax1.set_title(f'Distribuição de {num_col}')
+    
+    sns.boxplot(x=df[num_col], ax=ax2, color='#FFD119')
+    ax2.set_title(f'Boxplot de {num_col}')
+    
+    st.pyplot(fig)
+
+# ============ ANÁLISE CATEGÓRICA ============
+categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
+if categorical_cols:
+    st.header("📌 Análise Categórica")
+    cat_col = st.selectbox("Selecione coluna categórica", categorical_cols)
+    
+    top_n = st.slider("Mostrar top N valores", 5, 20, 10)
+    counts = df[cat_col].value_counts().nlargest(top_n)
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(x=counts.values, y=counts.index, ax=ax, palette=custom_palette)
+    plt.title(f'Top {top_n} Valores em {cat_col}')
+    st.pyplot(fig)
+
+# ============ CORRELAÇÕES ============
+if len(numerical_cols) > 1:
+    st.header("🔗 Correlações Numéricas")
+    fig, ax = plt.subplots(figsize=(12, 8))
+    mask = np.triu(np.ones_like(df[numerical_cols].corr(), dtype=bool))
+    sns.heatmap(df[numerical_cols].corr(), annot=True, fmt=".2f", 
+                cmap='coolwarm', mask=mask, ax=ax, center=0,
+                annot_kws={"color": "white"})
+    st.pyplot(fig)
