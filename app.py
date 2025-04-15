@@ -5,7 +5,7 @@ import seaborn as sns
 import numpy as np
 from datetime import datetime
 
-# ============ CONFIGURAÇÃO DA PÁGINA (OBRIGATÓRIO SER PRIMEIRO) ============
+# ============ CONFIGURAÇÃO DA PÁGINA (DEVE SER O PRIMEIRO COMANDO) ============
 st.set_page_config(
     page_title="Analytics Pro",
     page_icon="📊",
@@ -13,39 +13,43 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============ TEMA DARK PERSONALIZADO ============
+# ============ TEMA DARK COMPLETO ============
 DARK_THEME = """
 <style>
+/* Cores principais */
 :root {
     --primary-bg: #141414;
     --secondary-bg: #191919;
     --tertiary-bg: #262626;
     --accent: #FFD119;
-    --text: #FFFFFF;
+    --text: #E0E0E0;
 }
 
-/* Base */
-html, body, [class*="css"] {
-    color: var(--text);
-    background-color: var(--primary-bg);
+/* Configuração global */
+.stApp {
+    background-color: var(--primary-bg) !important;
+    color: var(--text) !important;
+}
+
+/* Textos */
+p, div, span, pre {
+    color: var(--text) !important;
 }
 
 /* Sidebar */
 [data-testid="stSidebar"] {
     background-color: var(--secondary-bg) !important;
-    border-right: 1px solid var(--accent) !important;
 }
 
 /* Widgets */
 .stSelectbox, .stSlider, .stRadio, .stTextInput {
     background-color: var(--tertiary-bg) !important;
-    border: 1px solid #404040 !important;
-    border-radius: 8px !important;
-    color: white !important;
+    color: var(--text) !important;
+    border-color: #404040 !important;
 }
 
 /* Tabelas */
-[data-testid="stDataFrame"] {
+.stDataFrame {
     background-color: var(--tertiary-bg) !important;
 }
 
@@ -58,7 +62,7 @@ h1, h2, h3, h4, h5, h6 {
 .stButton>button {
     background-color: var(--tertiary-bg) !important;
     color: var(--accent) !important;
-    border: 1px solid var(--accent) !important;
+    border-color: var(--accent) !important;
 }
 
 .stButton>button:hover {
@@ -69,7 +73,6 @@ h1, h2, h3, h4, h5, h6 {
 /* Abas */
 [data-testid="stTab"] {
     background-color: var(--secondary-bg) !important;
-    border: 1px solid #404040 !important;
 }
 
 /* Gráficos */
@@ -77,9 +80,28 @@ h1, h2, h3, h4, h5, h6 {
     background-color: var(--secondary-bg) !important;
 }
 
-/* Linhas divisórias */
-hr {
-    border-color: var(--accent) !important;
+/* Métricas */
+[data-testid="stMetric"] {
+    background-color: var(--tertiary-bg) !important;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+/* Dataframe */
+.dataframe {
+    background-color: var(--tertiary-bg) !important;
+    color: var(--text) !important;
+}
+
+/* Linhas da tabela */
+.dataframe tr:nth-child(even) {
+    background-color: var(--secondary-bg) !important;
+}
+
+/* Células da tabela */
+.dataframe th, .dataframe td {
+    color: var(--text) !important;
+    border-color: #404040 !important;
 }
 </style>
 """
@@ -113,7 +135,7 @@ def is_datetime_column(series):
 # ============ SIDEBAR ============
 with st.sidebar:
     st.title("📊 Analytics Pro")
-    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("<hr style='border:1px solid #FFD119'>", unsafe_allow_html=True)
     uploaded_file = st.file_uploader("Carregue seu arquivo CSV", type="csv")
 
 # ============ PÁGINA PRINCIPAL ============
@@ -196,11 +218,17 @@ if numerical_cols:
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
     
     sns.histplot(df[num_col], kde=True, ax=ax1, color='#FFD119')
-    ax1.set_title(f'Distribuição de {num_col}')
+    ax1.set_title(f'Distribuição de {num_col}', color='white')
+    ax1.tick_params(colors='white')
+    ax1.xaxis.label.set_color('white')
+    ax1.yaxis.label.set_color('white')
     
     sns.boxplot(x=df[num_col], ax=ax2, color='#FFD119')
-    ax2.set_title(f'Boxplot de {num_col}')
+    ax2.set_title(f'Boxplot de {num_col}', color='white')
+    ax2.tick_params(colors='white')
+    ax2.xaxis.label.set_color('white')
     
+    fig.patch.set_facecolor('#141414')
     st.pyplot(fig)
 
 # ============ ANÁLISE CATEGÓRICA ============
@@ -214,7 +242,11 @@ if categorical_cols:
     
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.barplot(x=counts.values, y=counts.index, ax=ax, palette=custom_palette)
-    plt.title(f'Top {top_n} Valores em {cat_col}')
+    plt.title(f'Top {top_n} Valores em {cat_col}', color='white')
+    ax.tick_params(colors='white')
+    ax.xaxis.label.set_color('white')
+    ax.yaxis.label.set_color('white')
+    fig.patch.set_facecolor('#141414')
     st.pyplot(fig)
 
 # ============ CORRELAÇÕES ============
@@ -225,4 +257,6 @@ if len(numerical_cols) > 1:
     sns.heatmap(df[numerical_cols].corr(), annot=True, fmt=".2f", 
                 cmap='coolwarm', mask=mask, ax=ax, center=0,
                 annot_kws={"color": "white"})
+    ax.tick_params(colors='white')
+    fig.patch.set_facecolor('#141414')
     st.pyplot(fig)
