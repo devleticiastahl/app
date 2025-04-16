@@ -69,7 +69,7 @@ except Exception as e:
     st.stop()
 
 # ============ VISÃO GERAL ============
-st.header("📋 Visão Geral")
+st.header("Visão Geral")
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Total de Registros", len(df))
@@ -83,7 +83,7 @@ st.dataframe(df.head(), height=250, use_container_width=True)
 # ============ ANÁLISE TEMPORAL ============
 datetime_cols = [col for col in df.columns if is_datetime_column(df[col])]
 if datetime_cols:
-    st.header("⏰ Análise Temporal")
+    st.header("Análise Temporal")
     date_col = st.selectbox("Selecione coluna temporal", datetime_cols)
     
     try:
@@ -117,7 +117,7 @@ if datetime_cols:
 # ============ ANÁLISE NUMÉRICA ============
 numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
 if numerical_cols:
-    st.header("🔢 Análise Numérica")
+    st.header("Análise Numérica")
     num_col = st.selectbox("Selecione coluna numérica", numerical_cols)
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
@@ -133,7 +133,7 @@ if numerical_cols:
 # ============ ANÁLISE CATEGÓRICA ============
 categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
 if categorical_cols:
-    st.header("📌 Análise Categórica")
+    st.header("Análise Categórica")
     cat_col = st.selectbox("Selecione coluna categórica", categorical_cols)
     
     top_n = st.slider("Mostrar top N valores", 5, 20, 10)
