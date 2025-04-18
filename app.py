@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from datetime import datetime
-from io import BytesIO
 
 # ============ CONFIGURAÇÃO DA PÁGINA ============
 st.set_page_config(
@@ -188,42 +187,68 @@ if categorical_cols:
     plt.title(f'Top {top_n} Valores em {cat_col}')
     st.pyplot(fig)
 
-# ============ CORRELAÇÕES ============
+# ============ CORRELAÇÕES NUMÉRICAS (MELHORADA) ============
 if len(numerical_cols) > 1:
-    st.header("🔗 Correlações Numéricas")
-    fig, ax = plt.subplots(figsize=(12, 8))
-    mask = np.triu(np.ones_like(df[numerical_cols].corr(), dtype=bool))
-    sns.heatmap(df[numerical_cols].corr(), annot=True, fmt=".2f", 
-                cmap='coolwarm', mask=mask, ax=ax, center=0,
-                annot_kws={"size": 10})
+    st.header("🔍 Análise de Correlações")
+    
+    # Seletor de método de correlação
+    method = st.selectbox(
+        "Método de correlação",
+        ["pearson", "spearman", "kendall"],
+        index=0,
+        help="Selecione o método de cálculo de correlação"
+    )
+    
+    # Opção para filtrar correlações fortes
+    min_corr = st.slider(
+        "Mostrar apenas correlações acima de",
+        -1.0, 1.0, 0.5,
+        step=0.1,
+        help="Filtrar apenas correlações significativas"
+    )
+    
+    # Cálculo da matriz de correlação
+    corr_matrix = df[numerical_cols].corr(method=method)
+    
+    # Filtro para mostrar apenas correlações fortes
+    mask = np.abs(corr_matrix) >= min_corr
+    
+    # Plot da matriz de correlação
+    fig, ax = plt.subplots(figsize=(12, 10))
+    sns.heatmap(
+        corr_matrix,
+        mask=(~mask) | np.triu(np.ones_like(corr_matrix, dtype=bool)),
+        annot=True,
+        fmt=".2f",
+        cmap='coolwarm',
+        center=0,
+        vmin=-1,
+        vmax=1,
+        linewidths=0.5,
+        annot_kws={"size": 9},
+        ax=ax
+    )
+    plt.title(f'Matriz de Correlação ({method.capitalize()})', pad=20)
     st.pyplot(fig)
-
-# ============ EXPORTAÇÃO DE RESULTADOS ============
-st.markdown("---")
-st.header("📤 Exportar Resultados")
-
-export_format = st.selectbox("Formato de exportação", ["CSV", "Excel"])
-filename = st.text_input("Nome do arquivo", "analytics_results")
-
-if st.button("Exportar Dados"):
-    try:
-        if export_format == "CSV":
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Baixar CSV",
-                data=csv,
-                file_name=f"{filename}.csv",
-                mime="text/csv"
-            )
-        else:
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False)
-            st.download_button(
-                label="Baixar Excel",
-                data=output.getvalue(),
-                file_name=f"{filename}.xlsx",
-                mime="application/vnd.ms-excel"
-            )
-    except Exception as e:
-        st.error(f"Erro ao exportar: {str(e)}")
+    
+    # Análise das correlações mais fortes
+    st.subheader("Principais Correlações")
+    
+    # Transforma a matriz em pares de correlação
+    corr_pairs = corr_matrix.unstack().sort_values(ascending=False)
+    
+    # Remove auto-correlações e duplicatas
+    corr_pairs = corr_pairs[
+        (corr_pairs != 1) & 
+        (np.abs(corr_pairs) >= min_corr)
+    ]
+    
+    # Exibe as correlações mais fortes
+    if len(corr_pairs) > 0:
+        st.write("**Maiores correlações positivas:**")
+        st.dataframe(corr_pairs.head(5).style.format("{:.2f}"))
+        
+        st.write("**Maiores correlações negativas:**")
+        st.dataframe(corr_pairs.tail(5).style.format("{:.2f}"))
+    else:
+        st.info(f"Nenhuma correlação encontrada acima de {min_corr} em valor absoluto")
