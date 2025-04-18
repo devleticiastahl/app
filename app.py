@@ -187,68 +187,24 @@ if categorical_cols:
     plt.title(f'Top {top_n} Valores em {cat_col}')
     st.pyplot(fig)
 
-# ============ CORRELAÇÕES NUMÉRICAS (MELHORADA) ============
+# ============ CORRELAÇÕES NUMÉRICAS SIMPLIFICADA ============
 if len(numerical_cols) > 1:
-    st.header("🔍 Análise de Correlações")
+    st.header("Correlação Numérica")
     
-    # Seletor de método de correlação
-    method = st.selectbox(
-        "Método de correlação",
-        ["pearson", "spearman", "kendall"],
-        index=0,
-        help="Selecione o método de cálculo de correlação"
-    )
-    
-    # Opção para filtrar correlações fortes
-    min_corr = st.slider(
-        "Mostrar apenas correlações acima de",
-        -1.0, 1.0, 0.5,
-        step=0.1,
-        help="Filtrar apenas correlações significativas"
-    )
-    
-    # Cálculo da matriz de correlação
-    corr_matrix = df[numerical_cols].corr(method=method)
-    
-    # Filtro para mostrar apenas correlações fortes
-    mask = np.abs(corr_matrix) >= min_corr
-    
-    # Plot da matriz de correlação
-    fig, ax = plt.subplots(figsize=(12, 10))
+    # Gráfico de correlação padrão
+    fig, ax = plt.subplots(figsize=(10, 8))
+    mask = np.triu(np.ones_like(df[numerical_cols].corr(), dtype=bool))
     sns.heatmap(
-        corr_matrix,
-        mask=(~mask) | np.triu(np.ones_like(corr_matrix, dtype=bool)),
+        df[numerical_cols].corr(),
+        mask=mask,
         annot=True,
         fmt=".2f",
         cmap='coolwarm',
         center=0,
-        vmin=-1,
-        vmax=1,
-        linewidths=0.5,
+        square=True,
+        linewidths=.5,
         annot_kws={"size": 9},
         ax=ax
     )
-    plt.title(f'Matriz de Correlação ({method.capitalize()})', pad=20)
+    plt.title('Matriz de Correlação', pad=20)
     st.pyplot(fig)
-    
-    # Análise das correlações mais fortes
-    st.subheader("Principais Correlações")
-    
-    # Transforma a matriz em pares de correlação
-    corr_pairs = corr_matrix.unstack().sort_values(ascending=False)
-    
-    # Remove auto-correlações e duplicatas
-    corr_pairs = corr_pairs[
-        (corr_pairs != 1) & 
-        (np.abs(corr_pairs) >= min_corr)
-    ]
-    
-    # Exibe as correlações mais fortes
-    if len(corr_pairs) > 0:
-        st.write("**Maiores correlações positivas:**")
-        st.dataframe(corr_pairs.head(5).style.format("{:.2f}"))
-        
-        st.write("**Maiores correlações negativas:**")
-        st.dataframe(corr_pairs.tail(5).style.format("{:.2f}"))
-    else:
-        st.info(f"Nenhuma correlação encontrada acima de {min_corr} em valor absoluto")
