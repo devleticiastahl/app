@@ -4,10 +4,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from datetime import datetime
+from fpdf import FPDF
+import base64
+from tempfile import NamedTemporaryFile
+import os
 
 # ============ CONFIGURAÇÃO DA PÁGINA ============
 st.set_page_config(
-    page_title="Analytics Pro",
+    page_title="Gerador de Relatórios",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -44,6 +48,63 @@ def is_datetime_column(series):
             return False
     return False
 
+def create_pdf_report(df, logo_path, filename="relatorio.pdf"):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Adicionar logo se existir
+    if logo_path:
+        pdf.image(logo_path, x=10, y=8, w=30)
+    
+    # Título do relatório
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 20, "Relatório de Análise de Dados", ln=1, align='C')
+    pdf.ln(10)
+    
+    # Informações básicas
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, f"Data do relatório: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=1)
+    pdf.cell(0, 10, f"Total de registros: {len(df)}", ln=1)
+    pdf.cell(0, 10, f"Total de colunas: {len(df.columns)}", ln=1)
+    pdf.ln(10)
+    
+    # Amostra dos dados
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, "Amostra dos Dados", ln=1)
+    pdf.set_font("Arial", '', 10)
+    
+    # Criar tabela com amostra dos dados
+    cols = df.columns.tolist()
+    rows = df.head().values.tolist()
+    
+    # Configurar largura das colunas
+    col_width = pdf.w / (len(cols) + 1)
+    
+    # Cabeçalho da tabela
+    pdf.set_fill_color(200, 220, 255)
+    for col in cols:
+        pdf.cell(col_width, 10, str(col)[:15], border=1, fill=True)
+    pdf.ln()
+    
+    # Dados da tabela
+    pdf.set_fill_color(255, 255, 255)
+    for row in rows:
+        for item in row:
+            pdf.cell(col_width, 10, str(item)[:15], border=1)
+        pdf.ln()
+    
+    # Salvar o PDF
+    pdf.output(filename)
+    return filename
+
+def get_binary_file_downloader_html(bin_file, file_label='File'):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    bin_str = base64.b64encode(data).decode()
+    href = f'<a href="data:application/octet-stream;base64,{bin_str}" download="{os.path.basename(bin_file)}">Download {file_label}</a>'
+    return href
+
 # ============ PÁGINA INICIAL ============
 def show_homepage():
     col1, col2 = st.columns([1, 2])
@@ -51,30 +112,38 @@ def show_homepage():
         st.image("https://i.imgur.com/7kMk3Zz.png", width=300)
     with col2:
         st.markdown("""
-        ## Bem-vindo ao Analytics Pro!
-        **Sistema completo para análise exploratória de dados**
+        ## Bem-vindo ao Gerador de Relatórios!
+        **Sistema para criação de relatórios em PDF personalizados**
         
         ✅ Suporta arquivos **CSV** e **Excel** (XLSX)  
         📊 Gera visualizações automáticas  
-        🔍 Fornece estatísticas descritivas completas  
+        📑 Cria relatórios em PDF com sua logo  
         """)
     
     st.markdown("---")
     st.markdown("""
     ### Como usar:
-    1. **Carregue seu arquivo** no menu lateral ➡️
-    2. **Explore** as visualizações automáticas
-    3. **Analise** os insights gerados
+    1. **Carregue seu arquivo de dados** no menu lateral
+    2. **Carregue sua logo** (opcional)
+    3. **Explore** as visualizações automáticas
+    4. **Gere o relatório** em PDF
     """)
 
 # ============ SIDEBAR ============
 with st.sidebar:
-    st.title("📊 Analytics Pro")
+    st.title("📊 Gerador de Relatórios")
     st.markdown("<hr>", unsafe_allow_html=True)
+    
     uploaded_file = st.file_uploader(
         "Carregue seu arquivo de dados", 
         type=["csv", "xlsx"],
         help="Formatos suportados: .csv, .xlsx"
+    )
+    
+    logo_file = st.file_uploader(
+        "Carregue sua logo (opcional)", 
+        type=["png", "jpg", "jpeg"],
+        help="Formatos suportados: .png, .jpg, .jpeg"
     )
 
 # ============ PÁGINA PRINCIPAL ============
@@ -91,6 +160,14 @@ if df is None:
 st.session_state['df'] = df
 st.success(f"✅ Arquivo '{uploaded_file.name}' carregado com sucesso!")
 
+# Salvar logo temporariamente se for carregada
+logo_path = None
+if logo_file:
+    with NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+        tmp_file.write(logo_file.getvalue())
+        logo_path = tmp_file.name
+    st.success(f"✅ Logo carregada com sucesso!")
+
 # ============ VISÃO GERAL ============
 st.header("Visão Geral")
 col1, col2, col3, col4 = st.columns(4)
@@ -106,72 +183,21 @@ with col4:
 st.subheader("Amostra dos Dados")
 st.dataframe(df.head(), height=250, use_container_width=True)
 
-# ============ ANÁLISE TEMPORAL ============
-datetime_cols = [col for col in df.columns if is_datetime_column(df[col])]
-if datetime_cols:
-    st.header("Análise Temporal")
-    date_col = st.selectbox("Selecione coluna temporal", datetime_cols)
-    
-    try:
-        df[date_col] = pd.to_datetime(df[date_col])
-        
-        tab1, tab2 = st.tabs(["📈 Série Temporal", "🗓️ Distribuição"])
-        with tab1:
-            freq = st.radio("Frequência", ["Diária", "Mensal", "Anual"], horizontal=True)
-            if freq == "Diária":
-                temp_df = df[date_col].dt.floor('D').value_counts().sort_index()
-            elif freq == "Mensal":
-                temp_df = df.groupby(df[date_col].dt.to_period('M')).size()
-                temp_df.index = temp_df.index.to_timestamp()
-            else:
-                temp_df = df.groupby(df[date_col].dt.to_period('Y')).size()
-                temp_df.index = temp_df.index.to_timestamp()
-            
-            st.line_chart(temp_df)
-        
-        with tab2:
-            col1, col2 = st.columns(2)
-            with col1:
-                st.subheader("Por Hora do Dia")
-                df['__hour__'] = df[date_col].dt.hour
-                st.bar_chart(df['__hour__'].value_counts())
-            
-            with col2:
-                st.subheader("Por Dia da Semana")
-                df['__weekday__'] = df[date_col].dt.weekday
-                st.bar_chart(df['__weekday__'].value_counts())
-    except Exception as e:
-        st.warning(f"⚠️ Não foi possível analisar a coluna temporal: {str(e)}")
-
 # ============ ANÁLISE NUMÉRICA ============
 numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
 if numerical_cols:
     st.header("Análise Numérica")
     num_col = st.selectbox("Selecione coluna numérica", numerical_cols)
     
-    tab1, tab2 = st.tabs(["📊 Distribuição", "📈 Tendência"])
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
     
-    with tab1:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-        
-        sns.histplot(df[num_col], kde=True, ax=ax1, color='royalblue')
-        ax1.set_title(f'Distribuição de {num_col}')
-        
-        sns.boxplot(x=df[num_col], ax=ax2, color='lightgreen')
-        ax2.set_title(f'Boxplot de {num_col}')
-        
-        st.pyplot(fig)
+    sns.histplot(df[num_col], kde=True, ax=ax1, color='royalblue')
+    ax1.set_title(f'Distribuição de {num_col}')
     
-    with tab2:
-        if datetime_cols:
-            date_col = st.selectbox("Selecione coluna temporal para análise", datetime_cols, key="trend_date")
-            try:
-                df[date_col] = pd.to_datetime(df[date_col])
-                trend_df = df.groupby(df[date_col].dt.to_period('M'))[num_col].mean()
-                trend_df.index = trend_df.index.to_timestamp()
-                st.line_chart(trend_df)
-            except:
-                st.warning("Não foi possível criar gráfico de tendência")
+    sns.boxplot(x=df[num_col], ax=ax2, color='lightgreen')
+    ax2.set_title(f'Boxplot de {num_col}')
+    
+    st.pyplot(fig)
 
 # ============ ANÁLISE CATEGÓRICA ============
 categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
@@ -187,24 +213,15 @@ if categorical_cols:
     plt.title(f'Top {top_n} Valores em {cat_col}')
     st.pyplot(fig)
 
-# ============ CORRELAÇÕES NUMÉRICAS SIMPLIFICADA ============
-if len(numerical_cols) > 1:
-    st.header("Correlação Numérica")
-    
-    # Gráfico de correlação padrão
-    fig, ax = plt.subplots(figsize=(10, 8))
-    mask = np.triu(np.ones_like(df[numerical_cols].corr(), dtype=bool))
-    sns.heatmap(
-        df[numerical_cols].corr(),
-        mask=mask,
-        annot=True,
-        fmt=".2f",
-        cmap='coolwarm',
-        center=0,
-        square=True,
-        linewidths=.5,
-        annot_kws={"size": 9},
-        ax=ax
-    )
-    plt.title('Matriz de Correlação', pad=20)
-    st.pyplot(fig)
+# ============ BOTÃO PARA GERAR RELATÓRIO ============
+if st.button("Gerar Relatório em PDF"):
+    with st.spinner("Criando relatório..."):
+        report_path = create_pdf_report(df, logo_path)
+        st.success("Relatório gerado com sucesso!")
+        
+        # Mostrar link para download
+        st.markdown(get_binary_file_downloader_html(report_path, 'Relatório PDF'), unsafe_allow_html=True)
+        
+        # Limpar arquivo temporário da logo
+        if logo_path and os.path.exists(logo_path):
+            os.unlink(logo_path)
