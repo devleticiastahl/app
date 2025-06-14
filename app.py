@@ -108,8 +108,6 @@ def get_binary_file_downloader_html(bin_file, file_label='File'):
 # ============ PÁGINA INICIAL ============
 def show_homepage():
     col1, col2 = st.columns([1, 2])
-    with col1:
-        st.image("https://i.imgur.com/7kMk3Zz.png", width=300)
     with col2:
         st.markdown("""
         ## Bem-vindo ao Gerador de Relatórios!
